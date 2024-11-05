@@ -23,20 +23,37 @@ By default, `m=4000`, `n=4000`, `r=5` and `threads_blk=32`.
 m=4k, blk=32 | m=10k, blk=32 | m=20k, blk=32  
 
 ## Execution results  
+These execution results only account for computation time only, without memory management time:  
 
 | r = 5, t(ms) | m=4k, n=4k | m=10k, n=10k | m=20k, n=20k |
 | ------------ | ---------- | ------------ | ------------ |
-| sequential   |            |              |              |
-| blk = 32     |            |              |              |
-| blk = 64     |            |              |              |
-| blk = 128    |            |              |              |
+| sequential   | 242.869    | 1515.802     | 6062.012     |
+| blk = 32     | 0.584      | 4.362        | 17.375       |
+| blk = 64     | 0.246      | 2.190        | 8.694        |
+| blk = 128    | 0.143      | 1.401        | 5.530        |
 
 | r = 10, t(ms) | m=4k, n=4k | m=10k, n=10k | m=20k, n=20k |
 | ------------- | ---------- | ------------ | ------------ |
-| sequential    |            |              |              |
-| blk = 32      |            |              |              |
-| blk = 64      |            |              |              |
-| blk = 128     |            |              |              |
+| sequential    | 474.167    | 2964.916     | 11840.800    |
+| blk = 32      | 0.389      | 4.365        | 17.380       |
+| blk = 64      | 0.276      | 2.413        | 9.600        |
+| blk = 128     | 0.236      | 2.320        | 9.215        | 
+
+These execution results account for computation time AND memory management time:  
+
+| r = 5, t(ms) | m=4k, n=4k | m=10k, n=10k | m=20k, n=20k |
+| ------------ | ---------- | ------------ | ------------ |
+| sequential   | 242.869    | 1515.802     | 6062.012     |
+| blk = 32     | 7.354      | 43.495       | 171.911      |
+| blk = 64     | 7.033      | 41.766       | 164.641      |
+| blk = 128    | 6.876      | 40.552       | 160.230      | 
+
+| r = 10, t(ms) | m=4k, n=4k | m=10k, n=10k | m=20k, n=20k |
+| ------------- | ---------- | ------------ | ------------ |
+| sequential    | 474.167    | 2964.916     | 11840.800    |
+| blk = 32      | 7.183      | 43.882       | 173.476      |
+| blk = 64      | 7.033      | 41.587       | 164.273      |
+| blk = 128     | 7.020      | 41.851       | 164.865      | 
 
 
 ## Examples
