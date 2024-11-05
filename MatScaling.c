@@ -1,87 +1,103 @@
 /* Author: Alejandro Perez */
 // Imports
-#include <stdio.h>¡
+#include <stdio.h>
 #include <stdlib.h>
-#include <math.h>¡
+#include <math.h>
 #include <unistd.h> // For sleep
 #include <string.h> // Memcpy
 
 // Defines 
-#if !defined(N)
-#define N 12
-#endif
+#define default_M 4000
+#define default_N 4000
+#define default_R 5
+#define default_THREADS_PER_BLOCK 32
+
 
 // Populate matrix
-void populate_matrix(int *M, int n){
-    int ind;
-    // for (ind = 0; ind < n*n; ind++) M[ind] = random();
-    for (ind = 0; ind < n*n; ind++) M[ind] = ind; // For simple checks
+void populate_matrix(float *M, int n){
+    int i;
+    for (i=0; i<n; i++) M[i] = (float)rand() / (float) RAND_MAX;
 }
 
-// Print Matrix
-void print_matrix(int *M, int n){
-    int i,j, size= n;
-    for (i=0; i<size; i++)
+// Print Matrix - For testing
+void print_matrix(float *M, int m, int n){
+    int i,j;
+    for (i=0; i<m; i++)
     {
         printf("[");
-        for (j=0; j<size-1; j++)
-            printf("%d ", M[i*n+j]);
-        printf("%d]\n",M[i*n+size-1]);
+        for (j=0; j<n-1; j++)
+            printf("%.2f ", M[i*n+j]);
+        printf("%.2f]\n",M[i*n+n-1]);
     }
 }
 
-// Check results
-int mat_equal(int *A, int *B, int n){
-    int i;
-    for (i=0; i<n*n; i++)
-        if (A[i]!=B[i])
-            return 0;
-    return 1;
+// // Check results
+// int mat_equal(int *A, int *B, int n){
+//     int i;
+//     for (i=0; i<n*n; i++)
+//         if (A[i]!=B[i])
+//             return 0;
+//     return 1;
+// }
+
+void matrix_scaling_seq(float *mat, float *rMat, float *factors, int r, int m, int n){
+    int rep, i;
+    float factor;
+
+    for (i=0; i<m*n; i++) rMat[i] = factors[0]*mat[i];
+
+    for (rep=1; rep<r; rep++)
+    {
+        factor = factors[rep];
+        for (i=0; i<m*n; i++) rMat[i] *= factor;
+    }
 }
 
 // Main
 int main(int argc, char *argv[])
 {
     // Variables
-    int *M, *sM, *sM_res, *Mseq, *Mpar; 
-    int i, j, nproc, pid, grid_pid, grid_coords[2];
-    int block_dim, n, sN, equal;
-    int left_pid, right_pid, up_pid, down_pid;
+    // int i;
+    int m, n, r, threads_blk; 
+    float *mat, *matSeq, *matPar, *factors;
 
+    m = default_M;
+    n = default_N;
+    r = default_R;
+    threads_blk = default_THREADS_PER_BLOCK;
     // If parameter --> error
-    if (argc > 1) {fprintf(stderr, "Usage: %s\n", argv[0] ); exit(1);} 
-    n = N;
+    if (argc > 1) m = atoi(argv[1]);
+    if (argc > 2) n = atoi(argv[2]);
+    if (argc > 3) r = atoi(argv[3]);
+    if (argc > 4) r = atoi(argv[3]);
+    if (argc > 5) {fprintf(stderr, "Usage: %s nrows(m:4000) ncol(n:4000) repetitions(r:5) threads_per_block(threads_blk:32)\n", argv[0] ); exit(1);}
 
+    printf("\n ---Program start---\n\n Configuration chosen --> m: %d, n: %d, r: %d, threads_blk: %d\n",m,n,r,threads_blk);
+    srand(42); // Meaning of life
 
-    // Allocate memory for M, Mseq and Mpar 
-    M    = (int *) malloc(n*n*sizeof(int));
-    Mseq = (int *) malloc(n*n*sizeof(int));
-    Mpar = (int *) malloc(n*n*sizeof(int));
+    // Allocate memory for mat and factors
+    factors = (float *) malloc(r*sizeof(float));
+    mat     = (float *) malloc(m*n*sizeof(float));
+    matSeq  = (float *) malloc(m*n*sizeof(float));
+    matPar  = (float *) malloc(m*n*sizeof(float));
 
-
-    // Calculate submatrix dimensions
-    block_dim = sqrt(nproc);
-    sN = n / block_dim;
-
-    // Allocate memory for sub matrix sM
-    sM     = (int *) malloc(sN*sN*sizeof(int));
-    sM_res = (int *) malloc(sN*sN*sizeof(int));
-
-    
     // Populate matrix M 
-    populate_matrix(M, n);
+    populate_matrix(mat, m*n);
+    
+    // Same function works for generating factors
+    populate_matrix(factors, r);
+
+    // Get sequential result for later correctness analysis
+    matrix_scaling_seq(mat, matSeq, factors, r, m, n);
+
+    // Calculate kernel call dimensions
 
     // Check results
-    equal = mat_equal(Mseq, Mpar, n);
-    if (equal) printf("Result is OK! :)\n");
-    else printf("Results are NOT OK :(\n");
 
-    free(M);
-    free(Mseq);
-    free(Mpar);
-
-    // Frees 
-    free(sM);
-    free(sM_res);
+    // Frees
+    free(factors);
+    free(mat);
+    free(matSeq);
+    free(matPar);
     return 0;
 }
