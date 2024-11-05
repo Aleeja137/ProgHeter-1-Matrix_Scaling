@@ -62,6 +62,7 @@ int main(int argc, char *argv[])
     // int i;
     int m, n, r, threads_blk; 
     float *mat, *matSeq, *matPar, *factors;
+    float *mat_cuda, *matResults_cuda;
 
     m = default_M;
     n = default_N;
@@ -72,8 +73,9 @@ int main(int argc, char *argv[])
     if (argc > 1) m = atoi(argv[1]);
     if (argc > 2) n = atoi(argv[2]);
     if (argc > 3) r = atoi(argv[3]);
-    if (argc > 4) r = atoi(argv[3]);
+    if (argc > 4) threads_blk = atoi(argv[4]);
     if (argc > 5) {fprintf(stderr, "Usage: %s nrows(m:4000) ncol(n:4000) repetitions(r:5) threads_per_block(threads_blk:32)\n", argv[0] ); exit(1);}
+    if (threads_blk != 32 && threads_blk != 64 && threads_blk != 128) {fprintf(stderr, "Correct threads_blk: {32,64,128}\n", argv[0] ); exit(1);}
 
     printf("\n ---Program start---\n\n Configuration chosen --> m: %d, n: %d, r: %d, threads_blk: %d\n",m,n,r,threads_blk);
     srand(42); // Meaning of life
@@ -94,8 +96,19 @@ int main(int argc, char *argv[])
     matrix_scaling_seq(mat, matSeq, factors, r, m, n);
 
     // Allocate memory on CUDA device
+    unsigned int numBytes = m*n*sizeof(float);
+    cudaMalloc((void **) &mat_cuda , numBytes) ;
+    cudaMalloc((void **) &matResults_cuda , numBytes) ;
+
     // Pass data to CUDA device memory
+    cudaMemcpy(mat_cuda,mat,numBytes,cudaMemcpyHostToDevice);
+    cudaMemset(matResults_cuda, 0, numBytes);
+
     // Calculate kernel call dimensions
+    unsigned int tasks = m*n;
+    dim3 dimBlock(threads_blk);                     // threads_blk threads
+    dim3 dimGrid((tasks+dimBlock.x-1)/dimBlock.x);  // tasks/threads_blk blocks, rounded if not divisible
+    
     // Call kernel
     // Synchronize (necessary?)
     // Receive data from CUDA device
