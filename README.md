@@ -10,7 +10,7 @@ For compilation, it is enough to execute the command:
 `nvcc -o mat MatScaling.cu -lm -Xcompiler -Wall -Xcompiler -Wextra`   
 
 ## Executing  
-For executing, it can be done directly on an interactive GPU node (for testing) or using the slurm bash submission script included in the repository (pending):    
+For executing, it can be done directly on an interactive GPU node (for testing) or using the slurm bash submission script included in the repository:      
 `sbatch submit_script.sh`  
 
 The program takes up to 4 arguments, which are in order `m n r threads_blk`:  
