@@ -31,14 +31,14 @@ void print_matrix(float *M, int m, int n){
     }
 }
 
-// // Check results
-// int mat_equal(int *A, int *B, int n){
-//     int i;
-//     for (i=0; i<n*n; i++)
-//         if (A[i]!=B[i])
-//             return 0;
-//     return 1;
-// }
+// Check results
+int mat_equal(float *A, float *B, int size, float threshold){
+    int i;
+    float th = threshold;  
+    if (threshold < 0) th = 0.005; // Default threshold value
+    for (i=0; i<size; i++) if (fabs(A[i]-B[i]) > th) return 0;
+    return 1;
+}
 
 void matrix_scaling_seq(float *mat, float *rMat, float *factors, int r, int m, int n){
     int rep, i;
@@ -53,6 +53,8 @@ void matrix_scaling_seq(float *mat, float *rMat, float *factors, int r, int m, i
     }
 }
 
+// Define CUDA kernel
+
 // Main
 int main(int argc, char *argv[])
 {
@@ -65,7 +67,8 @@ int main(int argc, char *argv[])
     n = default_N;
     r = default_R;
     threads_blk = default_THREADS_PER_BLOCK;
-    // If parameter --> error
+
+    // Check parameters
     if (argc > 1) m = atoi(argv[1]);
     if (argc > 2) n = atoi(argv[2]);
     if (argc > 3) r = atoi(argv[3]);
@@ -75,7 +78,7 @@ int main(int argc, char *argv[])
     printf("\n ---Program start---\n\n Configuration chosen --> m: %d, n: %d, r: %d, threads_blk: %d\n",m,n,r,threads_blk);
     srand(42); // Meaning of life
 
-    // Allocate memory for mat and factors
+    // Allocate memory for mattrices and factors
     factors = (float *) malloc(r*sizeof(float));
     mat     = (float *) malloc(m*n*sizeof(float));
     matSeq  = (float *) malloc(m*n*sizeof(float));
@@ -90,9 +93,18 @@ int main(int argc, char *argv[])
     // Get sequential result for later correctness analysis
     matrix_scaling_seq(mat, matSeq, factors, r, m, n);
 
+    // Allocate memory on CUDA device
+    // Pass data to CUDA device memory
     // Calculate kernel call dimensions
+    // Call kernel
+    // Synchronize (necessary?)
+    // Receive data from CUDA device
+    // Free memory on CUDA device
 
     // Check results
+    int equal = mat_equal(mat, mat, m*n, -1);
+    if (equal) printf("Results are OK :)\n");
+    else       printf("Results are NOT ok :'(\n");
 
     // Frees
     free(factors);
