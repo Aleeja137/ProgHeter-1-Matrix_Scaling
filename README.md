@@ -57,7 +57,7 @@ These execution results account for computation time AND memory management time:
 
 
 ## Examples
-When running the program with default settings, the following output is shown (speed-up pending):  
+When running the program with default settings, the following output is shown:  
 
 ```
  ---Program start---
