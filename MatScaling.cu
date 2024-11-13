@@ -55,17 +55,14 @@ void matrix_scaling_seq(float *mat, float *rMat, float *factors, int r, int m, i
 }
 
 // Define CUDA kernel
-__global__ void matrix_scaling_cuda(float *mat, float *rMat, float *factors, int r, int m, int n){
+__global__ void matrix_scaling_cuda(float *mat, float *factors, int r, int m, int n){
 
     int global_thread_id = blockIdx.x * blockDim.x + threadIdx.x;
 
     int rep;
 
     if (global_thread_id < m*n)
-    {
-        rMat[global_thread_id] = mat[global_thread_id] * factors[0];
-        for (rep=1; rep<r; rep++) rMat[global_thread_id] *= factors[rep];
-    }
+        for (rep=0; rep<r; rep++) mat[global_thread_id] *= factors[rep];
 
 }
 
@@ -77,10 +74,10 @@ int main(int argc, char *argv[])
     int m, n, r, threads_blk; 
     float *mat, *matSeq, *matPar, *factors;
     float *mat_cuda, *matResults_cuda, *factors_cuda;
-    cudaEvent_t start_seq, start_par, start_par_tot, end_seq, end_par;
+    cudaEvent_t start_seq, start_par, start_par_tot, end_par_tot, end_seq, end_par;
     cudaEventCreate(&start_seq); cudaEventCreate(&end_seq);
     cudaEventCreate(&start_par); cudaEventCreate(&end_par);
-    cudaEventCreate(&start_par_tot);
+    cudaEventCreate(&start_par_tot); cudaEventCreate(&end_par_tot);
 
     m = default_M;
     n = default_N;
@@ -136,16 +133,18 @@ int main(int argc, char *argv[])
     // Call kernel
     printf("Starting parallel matrix scaling ... \n");
     cudaEventRecord(start_par);
-    matrix_scaling_cuda<<<dimGrid, dimBlock>>>(mat_cuda, matResults_cuda, factors_cuda, r, m, n);
+    matrix_scaling_cuda<<<dimGrid, dimBlock>>>(mat_cuda, factors_cuda, r, m, n);
     cudaEventRecord(end_par);
 
     // Receive data from CUDA device
-    cudaMemcpy(matPar, matResults_cuda, numBytes, cudaMemcpyDeviceToHost); 
+    cudaMemcpy(matPar, mat_cuda, numBytes, cudaMemcpyDeviceToHost); 
 
     // Free memory on CUDA device
     cudaFree(mat_cuda);
     cudaFree(matResults_cuda);
     cudaFree(factors_cuda);
+
+    cudaEventRecord(end_par_tot);
 
     // Check results
     int equal = mat_equal(matSeq, matPar, m*n, -1);
@@ -155,7 +154,7 @@ int main(int argc, char *argv[])
     float time_seq, time_par, time_par_tot;
     cudaEventElapsedTime(&time_seq, start_seq, end_seq);
     cudaEventElapsedTime(&time_par, start_par, end_par);
-    cudaEventElapsedTime(&time_par_tot, start_par_tot, end_par);
+    cudaEventElapsedTime(&time_par_tot, start_par_tot, end_par_tot);
 
     printf("Time for sequential:                       %.3f ms\n",time_seq);
     printf("Time for parallel (computation only):      %.3f ms\n",time_par);
@@ -164,7 +163,7 @@ int main(int argc, char *argv[])
     // Frees
     cudaEventDestroy(start_seq); cudaEventDestroy(end_seq);
     cudaEventDestroy(start_par); cudaEventDestroy(end_par);
-    cudaEventDestroy(start_par_tot);
+    cudaEventDestroy(start_par_tot); cudaEventDestroy(end_par_tot);
     free(factors);
     free(mat);
     free(matSeq);
